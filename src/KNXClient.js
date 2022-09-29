@@ -143,9 +143,9 @@ class KNXClient extends EventEmitter {
       // TCP
       this._clientSocket = new net.Socket()
       this._clientSocket.removeAllListeners() // 12/03/2022 Remove all listeners
-      // this._clientSocket.on(SocketEvents.data, this._processInboundMessage);
+      this._clientSocket.on(SocketEvents.data, this._processInboundMessage);
       this._clientSocket.on(SocketEvents.data, function (msg, rinfo, callback) {
-        console.log(msg, rinfo, callback)
+        console.log('tunneltcp data', msg, rinfo, callback)
       })
       this._clientSocket.on(SocketEvents.error, error => this.emit(KNXClientEvents.error, error))
       this._clientSocket.on(SocketEvents.close, info => this.emit(KNXClientEvents.close, info))
