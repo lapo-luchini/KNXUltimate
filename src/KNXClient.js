@@ -1018,7 +1018,7 @@ class KNXClient extends EventEmitter {
 
   _sendSecureSessionRequestMessage (cri) {
     const oHPAI = new HPAI.HPAI('0.0.0.0', 0, this._options.hostProtocol === 'TunnelTCP' ? KNXConstants.KNX_CONSTANTS.IPV4_TCP : KNXConstants.KNX_CONSTANTS.IPV4_UDP)
-    this.send(KNXProtocol.KNXProtocol.newKNXSecureSessionRequest(cri, oHPAI))
+    this.send(KNXProtocol.KNXProtocol.newKNXSecureSessionRequest(cri, oHPAI, jKNXSecureKeyring))
   }
 }
 
