@@ -3,27 +3,32 @@ const knx = require("./index.js");
 const KNXsecureKeyring = require("./src/KNXsecureKeyring.js");
 const dptlib = require('./src/dptlib');
 
+// const realLog = console.log;
+// console.log = (s) => {
+//     realLog(s);
+// };
+
 // This is the content of the ETS Keyring file obtained doing this: https://www.youtube.com/watch?v=OpR7ZQTlMRU
 let rawjKNXSecureKeyring = `<?xml version="1.0" encoding="utf-8"?>
-<Keyring Project="KNX Secure" CreatedBy="ETS 5.7.6 (Build 1398)" Created="2021-11-17T07:43:08" Signature="V279vCe6oJXL/6a06Ys2yQ==" xmlns="http://knx.org/xml/keyring/1">
-  <Backbone MulticastAddress="224.0.23.12" Latency="2000" Key="CRL14M51oI9pKhzMGGjO1g==" />
-  <Interface IndividualAddress="3.1.2" Type="Tunneling" Host="3.1.1" UserID="2" Password="gF8N8lKGU9cD3TNMLEvu50SbI48qI5EeC8WeciL53Zg=" Authentication="jHW6k+R/b+GOfdaNzXXildWI4BrqHkAoa6lUtWCGGDI=" />
-  <Interface IndividualAddress="3.1.3" Type="Tunneling" Host="3.1.1" UserID="3" Password="HbvdOCahzdmjhSaMBeFb/2x8+CwYxF1865N3Nrg485o=" Authentication="XtQMiHSX7cwgB3SJL+CZuCePx434JL1p9cZfjLiGfg4=" />
-  <Interface IndividualAddress="3.1.4" Type="Tunneling" Host="3.1.1" UserID="4" Password="VPlMEqpC/COz/szs1qsGLg63giJ/E5DbN8MIBgsLYyQ=" Authentication="zmn+tKNmoO+5jiKXeqeDruvC/OA/zNbOdhiWPFQ1+0g=" />
-  <Interface IndividualAddress="3.1.5" Type="Tunneling" Host="3.1.1" UserID="5" Password="Dqeea+bKaoe7pk/czGgKdLT5ucuOfwMJmpJ/0Q32woY=" Authentication="glxFMw43J7cUAklu38GVga2AjEcz4PgOc2aTEKpjXEI=" />
-  <Interface IndividualAddress="3.1.6" Type="Tunneling" Host="3.1.1" UserID="6" Password="teB74cgZdQL6CR81pyrWmSHUR8wlDw6PXM5oLlAPLyM=" Authentication="vRKBbWxwF1jsvi5oS64YGT3HaPog9Dcg+cVelgay3vY=" />
-  <Interface IndividualAddress="3.1.7" Type="Tunneling" Host="3.1.1" UserID="7" Password="BbGlEV5JGosOs2bl6d63rnYDax8S1pMqf5pKluV0l54=" Authentication="3U49RFQAM7pFD40y5zJg2ebcXKCh1cgx41DGzzAZzZE=" />
-  <Interface IndividualAddress="3.1.8" Type="Tunneling" Host="3.1.1" UserID="8" Password="8O2/pOsUgxQuTtspPZ2wIo4HQxvcrECaHLtoyUY0CZk=" Authentication="/4XvMBmc60edJUKUzpCrpy+MRfQJR5jN673I/Qa5V5o=" />
-  <Interface IndividualAddress="3.1.9" Type="Tunneling" Host="3.1.1" UserID="9" Password="8hIlqwHsQjRGd8sYRiXG/OyPDQObevIDuKRhVQcXxoc=" Authentication="USfsg+wsH0hwoeLq/GqLcPtfGk5XPW3aAjVgwQjYpQs=" />
+<Keyring Project="KNX Secure" CreatedBy="6.0.5" Created="2022-09-11T09:01:28" Signature="eQl8q8x2W+k00K9t6+RhIw==" xmlns="http://knx.org/xml/keyring/1">
+  <Backbone MulticastAddress="224.0.23.12" Latency="2000" Key="qKvBfLAKIPN8G6n2uV797w==" />
+  <Interface IndividualAddress="3.1.2" Type="Tunneling" Host="3.1.1" UserID="2" Password="kyvut6HSZ6oOakBBklvqNGcPmp002TWpJPB8lTrr1jM=" Authentication="X+i4qknThJEUB0+2UBF7FI06IYe67FfazV9vfPiMc68=" />
+  <Interface IndividualAddress="3.1.3" Type="Tunneling" Host="3.1.1" UserID="3" Password="Nw5zOfprxYtD+FQu861m0MTFGNOcFLXUisJCjWFwCDs=" Authentication="RIA1Geyo3r++6EDCKK5pwWv83UJZjTGiG/B6t7ez47M=" />
+  <Interface IndividualAddress="3.1.4" Type="Tunneling" Host="3.1.1" UserID="4" Password="dfFkoklhK/KAA17XZTdGFEa5t5UxLxcPtJxttiesCfc=" Authentication="Z7+H91/+D+5DEYVVgOZlj2UspMuzLcN+rOmwIcnyEqs=" />
+  <Interface IndividualAddress="3.1.5" Type="Tunneling" Host="3.1.1" UserID="5" Password="4JHOOT8QzO92g2JDrvCWOP5+aQG4lzfVX67HwcfSLhI=" Authentication="RHx9QnaqKbH6ku30eSWTyI9IwiBJeLrruasOvoDYMKU=" />
+  <Interface IndividualAddress="3.1.6" Type="Tunneling" Host="3.1.1" UserID="6" Password="LuBWxeIAG9JN0AXbCXwzne5+HNqJYnb72PhYsAT1xHI=" Authentication="XTRtzA5/v4kCdiYo6+++UdSkxqChwAqZg0UEh2pASK8=" />
+  <Interface IndividualAddress="3.1.7" Type="Tunneling" Host="3.1.1" UserID="7" Password="XkHWhGzkR0w2691UuYQt84TxILji7YLYxdVLTcw72LM=" Authentication="XOiuJkeUZWHdNzqEIDwqgOJCijlS20VkzBiTbaNY7Z8=" />
+  <Interface IndividualAddress="3.1.8" Type="Tunneling" Host="3.1.1" UserID="8" Password="g2h2u9UdfEryuI0PdwoQNWDkqBsXqp6tYSG6JrtLYZQ=" Authentication="BlEG79s+fg9Q7g8MPlrkbZVwLnnJXeX3p9o7za6EofM=" />
+  <Interface IndividualAddress="3.1.9" Type="Tunneling" Host="3.1.1" UserID="9" Password="W654HFS7BZlmh2BaS56lDDaRdrEOzh0J5VSo2w+DKBQ=" Authentication="Hm96LNTleilkbXJKyCZG4ivetKOjUkv59WFYhFAEwEs=" />
   <GroupAddresses>
-    <Group Address="16384" Key="CreHKeXp+5U2qMLVU0XWxw==" />
-    <Group Address="16385" Key="4N4QIW0wJiRitgxvX4s7ow==" />
-    <Group Address="16386" Key="AOqADeC4y2u4kYCtBclCtg==" />
+    <Group Address="16384" Key="i/SPfza/PfYm0qzJYOU9hA==" />
+    <Group Address="16385" Key="AneeYsqajqfVBSARDUdLRA==" />
+    <Group Address="16386" Key="m2m651Mu2waJZkPAgS/idg==" />
   </GroupAddresses>
   <Devices>
-    <Device IndividualAddress="3.1.1" ToolKey="T770+Sebf2zpx3X3A0S64A==" ManagementPassword="6LPLJeu+XxuGpn6tOqt9fw4NuSa/jIQCYXzFVDwPUiU=" Authentication="rywptqDB0/UNF/5VmlTs5YnrIqO9FJ3YGGEIm08Z1UQ=" SequenceNumber="121960556295" />
-    <Device IndividualAddress="3.1.10" ToolKey="t8SSY7LxrVgNvXwLqus4Pg==" SequenceNumber="121960675276" />
-    <Device IndividualAddress="3.1.11" ToolKey="VMpB+1fIuP4UFaDVQSjNHQ==" SequenceNumber="121960725775" />
+    <Device IndividualAddress="3.1.1" ToolKey="Bm2jy410EFHxgT7zin+hug==" ManagementPassword="ldhMMR5uDqBt8TcO0cutDzlVZeXb9WoPwd7LVTcATjk=" Authentication="fRdXfcjp1jlh/y/mxzhWTUTHQ7QgbkZzn9QF3zqv04Q=" SequenceNumber="121960556365" />
+    <Device IndividualAddress="3.1.10" ToolKey="NNebol5t4c5ZmOI73B+s3w==" SequenceNumber="121960675346" />
+    <Device IndividualAddress="3.1.11" ToolKey="jsS5Ior3UnnofoE1ZfNKjA==" SequenceNumber="121960725775" />
   </Devices>
 </Keyring>`;
 
@@ -37,7 +42,7 @@ let knxUltimateClientProperties = {
     localEchoInTunneling: true, // Leave true, forever.
     hostProtocol: "TunnelTCP", // "Multicast" in case you use a KNX/IP Router, "TunnelUDP" in case of KNX/IP Interface, "TunnelTCP" in case of secure KNX/IP Interface (not yet implemented)
     isSecureKNXEnabled: true, // Leave "false" until KNX-Secure has been released
-    KNXEthInterface: "Auto", // Bind to the first avaiable local interfavce. "Manual" if you wish to specify the interface (for example eth1); in this case, set the property interface to the interface name (interface:"eth1")
+    KNXEthInterface: "LAN", // Bind to the first avaiable local interfavce. "Manual" if you wish to specify the interface (for example eth1); in this case, set the property interface to the interface name (interface:"eth1")
     localIPAddress: "", // Leave blank, will be automatically filled by KNXUltimate
     jKNXSecureKeyring: "", // This is the unencrypted Keyring file content (see below)
 };

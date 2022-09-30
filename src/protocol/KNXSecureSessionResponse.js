@@ -40,7 +40,8 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         //this.secureSessionID = _secureSessionID;
         //this.messageAuthenticationCode = _messageAuthenticationCode;
         // Add the secure session ID to the keyring object
-        this.keyring = knx.appendPropertyToDecodedKeyring("secureSessionID", _secureSessionID);// .getDecodedKeyring();
+        this.keyring = knx.getDecodedKeyring();
+        this.keyring.secureSessionID = _secureSessionID;
 
         // // Getting the user password. The user id 0 is reserved and the user id 1 is used for management tasks,
         // // thus you will need to specify a user id that is 2 or higher according to the tunneling channel you would like to use.
@@ -55,17 +56,23 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         // 2) hash_in_big_endian = SHA256(sharedSecret_in_little_endian)
         // 3) sessionKey = get_first_16_bytes(hash_in_big_endian)
         let Curve25519 = require('./../Curve25519');
-        let sharedSecret_in_little_endian = Curve25519.sharedKey(Buffer.from(this.keyring.diffieHellmanClientPrivateValue, "hex"), Buffer.from(_diffieHellmanServerPublicValue, "hex"));
+        let sharedSecret_in_little_endian = Curve25519.sharedKey(this.keyring.tunnel.dhSecret.private, Buffer.from(_diffieHellmanServerPublicValue, "hex"));
         const CryptoJS = require('crypto-js');
         let hash_in_big_endian = CryptoJS.SHA256(sharedSecret_in_little_endian.toString());
         let sessionKey = Buffer.from(hash_in_big_endian.toString()).slice(0, 16);
-        knx.appendPropertyToDecodedKeyring("sessionKey", sessionKey);
-        knx.appendPropertyToDecodedKeyring("diffieHellmanServerPublicValue", _diffieHellmanServerPublicValue);
-        
-        
+        this.keyring.tunnel.sessionKey = sessionKey;
+        this.keyring.tunnel.dhServer = _diffieHellmanServerPublicValue;
+        const mac = require('aes-cbc-mac');
+        let auth = this.keyring.Devices[0].authenticationPassword
+        auth = auth + new Array((32 + 1) - auth.length).join('\0')
+        auth = Buffer.from(auth)
+        console.log('Auth', auth);
+        const myMAC = mac.create(auth, sessionKey, 16);
+        console.log('MAC', myMAC, Buffer.from(_messageAuthenticationCode, 'hex'));
 
 
-        console.log("BABANAN")
+
+        console.log("Tunnel parameters", this.keyring.tunnel)
         // KEYRING:
         // {
         //     ETSProjectName: "KNX Secure",
@@ -229,4 +236,3 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
 
 }
 exports.KNXSecureSessionResponse = KNXSecureSessionResponse;
-//# sourceMappingURL=KNXSecureSessionResponse.js.map

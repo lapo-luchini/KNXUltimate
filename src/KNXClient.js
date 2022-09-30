@@ -982,7 +982,7 @@ class KNXClient extends EventEmitter {
       }
     } catch (e) {
       try {
-        if (this.sysLogger !== undefined && this.sysLogger !== null) this.sysLogger.error('Received KNX packet: Error processing inbound message: ' + e.message + ' ' + sProcessInboundLog + ' ChannelID:' + this._channelID + ' Host:' + this._options.ipAddr + ':' + this._options.ipPort + '. This means that KNX-Ultimate received a malformed Header or CEMI message from your KNX Gateway.')
+        if (this.sysLogger !== undefined && this.sysLogger !== null) this.sysLogger.error('Received KNX packet: Error processing inbound message: ' + e.message + ' ' + sProcessInboundLog + ' ChannelID:' + this._channelID + ' Host:' + this._options.ipAddr + ':' + this._options.ipPort + '. This means that KNX-Ultimate received a malformed Header or CEMI message from your KNX Gateway.', e)
       } catch (error) { }
       try {
         // 05/01/2022 Avoid disconnecting, because there are many bugged knx gateways out there!
