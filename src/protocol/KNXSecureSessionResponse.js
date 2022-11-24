@@ -9,6 +9,10 @@ const KNXPacket = require("./KNXPacket");
 const HPAI = require("./HPAI");
 const CRIFactory = __importDefault(require("./CRIFactory"));
 const knx = require("../../index.js");
+const Curve25519 = require('./../Curve25519');
+const CryptoJS = require('crypto-js');
+const mac = require('aes-cbc-mac');
+const crypto = require('crypto');
 
 class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
     constructor(_secureSessionID, _diffieHellmanServerPublicValue, _messageAuthenticationCode) {
@@ -55,20 +59,26 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         // 1) sharedSecret_in_little_endian = Curve25519(myPrivateKey, peersPublicKey)
         // 2) hash_in_big_endian = SHA256(sharedSecret_in_little_endian)
         // 3) sessionKey = get_first_16_bytes(hash_in_big_endian)
-        let Curve25519 = require('./../Curve25519');
         let sharedSecret_in_little_endian = Curve25519.sharedKey(this.keyring.tunnel.dhSecret.private, Buffer.from(_diffieHellmanServerPublicValue, "hex"));
-        const CryptoJS = require('crypto-js');
-        let hash_in_big_endian = CryptoJS.SHA256(sharedSecret_in_little_endian.toString());
-        let sessionKey = Buffer.from(hash_in_big_endian.toString()).slice(0, 16);
+        console.log('Shared secret:', sharedSecret_in_little_endian)
+        let hash_in_big_endian = CryptoJS.SHA256(CryptoJS.lib.WordArray.create(sharedSecret_in_little_endian)).toString();
+        console.log('SHA-256:   ', hash_in_big_endian)
+        let sessionKey = Buffer.from(hash_in_big_endian, 'hex').slice(0, 16);
+        console.log('SessionKey:', sessionKey.toString('hex'));
         this.keyring.tunnel.sessionKey = sessionKey;
         this.keyring.tunnel.dhServer = _diffieHellmanServerPublicValue;
-        const mac = require('aes-cbc-mac');
         let auth = this.keyring.Devices[0].authenticationPassword
         auth = auth + new Array((32 + 1) - auth.length).join('\0')
         auth = Buffer.from(auth)
-        console.log('Auth', auth);
+        console.log('Auth', auth.toString('hex'));
         const myMAC = mac.create(auth, sessionKey, 16);
-        console.log('MAC', myMAC, Buffer.from(_messageAuthenticationCode, 'hex'));
+        console.log('MAC', _messageAuthenticationCode);
+        console.log('my1', myMAC.toString('hex'));
+        const ccm = crypto.createCipheriv('aes-128-ccm', auth, sessionKey, { authTagLength: 16 });
+        const aad = Buffer.alloc(40); // KNXnet/IP Secure Header | Secure Session Identifier | (Diffie-Hellman Client Public Value X ^ Diffie-Hellman Server Public Value Y)
+        ccm.setAAD(aad, { plaintextLength: 0 });
+        ccm.final();
+        console.log('my2', ccm.getAuthTag().toString('hex'));
 
 
 
