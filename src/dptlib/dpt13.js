@@ -30,9 +30,9 @@ exports.subtypes = {
   },
 
   '002': {
-    desc: 'Value_Activation_Energy',
-    name: 'Activation energy (J/mol)',
-    unit: 'J/mol'
+    desc: 'DPT_FlowRate_m3/h',
+    name: 'Flow Rate in m³/h',
+    unit: 'm³/h'
   },
 
   // 13.010 active energy (Wh)
@@ -44,7 +44,7 @@ exports.subtypes = {
 
   // 13.011 apparent energy (VAh)
   '011': {
-    desc: 'ApparantEnergy',
+    desc: 'ApparentEnergy',
     name: 'Apparent energy (VAh)',
     unit: 'VAh'
   },
@@ -77,10 +77,31 @@ exports.subtypes = {
     unit: 'kVARh'
   },
 
+  // 13.016 ActiveEnergy_MWh
+  '016': {
+    desc: 'ActiveEnergy_MWh',
+    name: 'Active Energy (MWh)',
+    unit: 'MWh'
+  },
+
   // 13.100 time lag(s)
   100: {
     desc: 'LongDeltaTimeSec',
     name: 'Time lag(s)',
     unit: 's'
+  },
+
+   // 13.1200 DeltaVolumeLiquid_Litre
+   1200: {
+    desc: 'DeltaVolumeLiquid_Litre',
+    name: 'Delta Volume Liquid (litre)',
+    unit: 'l'
+  },
+   
+   // 13.1201 DeltaVolume_m3
+   1201: {
+    desc: 'DeltaVolume_m3',
+    name: 'Delta Volume m3',
+    unit: 'm3'
   }
 }

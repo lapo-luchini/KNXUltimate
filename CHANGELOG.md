@@ -7,6 +7,30 @@
 # CHANGELOG
 
 <p>
+<b>Version 1.0.32</b> - January 2023<br/>
+- FIX: Fixed Datapoint 9. There was too many decimals.<br/>
+</p>
+<p>
+<b>Version 1.0.31</b> - January 2023<br/>
+- NEW: added Datapoint 28.001: ASCII string (variable length) UTF-8<br/>
+</p>
+<p>
+<b>Version 1.0.30</b> - November 2022<br/>
+- NEW: added Datapoints 13.016, 13.1200, 13.1201.<br/>
+</p>
+<p>
+<b>Version 1.0.29</b> - November 2022<br/>
+- NEW: added Griesser Datpoint Custom 6001.001.<br/>
+</p>
+<p>
+<b>Version 1.0.28</b> - November 2022<br/>
+- NEW: added datapoint 9.009 Airflow.<br/>
+</p>
+<p>
+<b>Version 1.0.27</b> - October 2022<br/>
+- FIX: fixed an issue accurring when you put a wrong IP/hostname in the configuration of the gateway. Leaving node running with such wrong configuration, after a month or so, all UDP channels remain occupied until reboot. Thanks to @tarag for reporting that.<br/>
+</p>
+<p>
 <b>Version 1.0.25</b> - September 2022<br/>
 - Standardized code.<br/>
 </p>

@@ -40,7 +40,7 @@ const SocketEvents = {
   data: 'data',
   close: 'close'
 }
-var KNXClientEvents;
+let KNXClientEvents;
 (function (KNXClientEvents) {
   KNXClientEvents.error = 'error'
   KNXClientEvents.disconnected = 'disconnected'
@@ -647,6 +647,12 @@ class KNXClient extends EventEmitter {
     }
     // 20/04/2022 this._channelID === null can happen when the KNX Gateway is already disconnected
     if (this._channelID === null) {
+      // 11/10/2022 Close the socket
+      try {
+        this._clientSocket.close()
+      } catch (error) {
+        if (this.sysLogger !== undefined && this.sysLogger !== null) this.sysLogger.debug('KNXClient: into Disconnect(), this._clientSocket.close(): ' + this._options.ipAddr + ':' + this._options.ipPort + ' ' + error.message)
+      }
       throw new Error('KNX Socket is already disconnected')
     }
     this.stopHeartBeat()

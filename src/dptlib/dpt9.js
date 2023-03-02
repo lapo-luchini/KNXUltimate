@@ -76,7 +76,7 @@ exports.basetype = {
   valuetype: 'basic',
   desc: '16-bit floating point value',
   help:
-        `// Send 16-bit floating point value.
+    `// Send 16-bit floating point value.
   msg.payload = 25;
   return msg;`
 }
@@ -145,6 +145,14 @@ exports.subtypes = {
     desc: 'air quality',
     unit: 'ppm',
     range: [0, 670760]
+  },
+
+  // 9.009 Airflow (ppm)
+  '009': {
+    name: 'Airflow (m3/h)',
+    desc: 'Airflow',
+    unit: 'm3/h',
+    range: [-671088.64, 670433.28]
   },
 
   // 9.010 time (s)
