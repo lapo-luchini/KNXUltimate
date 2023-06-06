@@ -1,69 +1,10 @@
-import util from 'node:util';
-import crypto from 'node:crypto';
+import KNXSecure from './src/protocol/KNXSecure.js';
 import Curve25519 from './src/Curve25519.js';
 
-const pbkdf2 = util.promisify(crypto.pbkdf2);
+const { pbkdf2, xor, len2byte, macCBC, hash, encrypt, decrypt } = KNXSecure;
 
 function dump(v) {
     return Buffer.from(v).toString('hex');
-}
-
-function xor(buf1, buf2) {
-    if (buf1.length != buf2.length)
-        throw new Error('Buffers must have same length.');
-    const out = Buffer.allocUnsafe(buf1.length);
-    for (let i = 0; i < out.length; ++i)
-        out[i] = buf1[i] ^ buf2[i];
-    return out;
-}
-
-function len2byte(len) {
-    if ((len >>> 16) > 0)
-        throw new Error('Length is excessive: ' + len);
-    return Buffer.from([(len >>> 8) & 0xFF, len & 0xFF]);
-}
-
-function macCBC(key, block0, additional, payload) {
-    const lenAddit = additional.length;
-    if ((lenAddit >>> 16) > 0)
-        throw new Error('Additional data is too long.');
-    const lenTotal = block0.length + 2 + lenAddit + payload.length;
-    const lenPadded = ((lenTotal-1)|0xF)+1; // pad to next 16 bytes block
-    const blocks = Buffer.concat([
-        block0,
-        len2byte(lenAddit),
-        additional,
-        payload,
-        Buffer.alloc(lenPadded - lenTotal)
-    ]);
-    // console.log('MAC CBC key:   ', key.toString('hex'));
-    // console.log('MAC CBC blocks:', blocks.toString('hex'));
-    const cipher = crypto.createCipheriv('aes-128-cbc', key, Buffer.alloc(16));
-    const tmp = cipher.update(blocks);
-    const tmp2 = cipher.final(); // should return nothing, but it does!??
-    // console.log('MAC CBC out:   ', tmp.toString('hex'));
-    // console.log('MAC CBC final: ', tmp2.toString('hex'));
-    return tmp.slice(-16);
-}
-
-function encrypt(key, ctr, mac, payload) {
-    const cipher = crypto.createCipheriv('aes-128-ctr', key, ctr);
-    const macEncrypted = cipher.update(mac);
-    return Buffer.concat([
-        cipher.update(payload),
-        cipher.final(),
-        macEncrypted
-    ]);
-}
-
-function decrypt(key, ctr, payload) {
-    const cipher = crypto.createDecipheriv('aes-128-ctr', key, ctr);
-    const mac = cipher.update(payload.slice(-16));
-    const data = Buffer.concat([
-        cipher.update(payload.slice(0, -16)),
-        cipher.final()
-    ]);
-    return { data, mac };
 }
 
 /** Calculate the payload and MAC for a secure wrapper. */
@@ -117,9 +58,7 @@ console.log('XORed pubkeys', dump(pubXOR));
 const keyShared = Curve25519.sharedKey(myKey.private, devKeyPub);
 console.log('# SessionResponse');
 console.log('ECDH shared  ', dump(keyShared));
-const sessionKey = crypto.createHash('sha256')
-    .update(Buffer.from(keyShared))
-    .digest().slice(0, 16);
+const sessionKey = hash(Buffer.from(keyShared)).slice(0, 16);
 console.log('Session key  ', dump(sessionKey));
 const myPassword = 'secret';
 const devPassword = 'trustme';
