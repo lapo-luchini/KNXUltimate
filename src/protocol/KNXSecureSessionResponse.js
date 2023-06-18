@@ -9,8 +9,8 @@ const KNXPacket = require("./KNXPacket");
 const HPAI = require("./HPAI");
 const CRIFactory = __importDefault(require("./CRIFactory"));
 const knx = require("../../index.js");
+const KNXSecure = require('./KNXSecure.js');
 const Curve25519 = require('./../Curve25519');
-const CryptoJS = require('crypto-js');
 const mac = require('aes-cbc-mac');
 const crypto = require('crypto');
 
@@ -59,11 +59,11 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         // 1) sharedSecret_in_little_endian = Curve25519(myPrivateKey, peersPublicKey)
         // 2) hash_in_big_endian = SHA256(sharedSecret_in_little_endian)
         // 3) sessionKey = get_first_16_bytes(hash_in_big_endian)
-        let sharedSecret_in_little_endian = Curve25519.sharedKey(this.keyring.tunnel.dhSecret.private, Buffer.from(_diffieHellmanServerPublicValue, "hex"));
-        console.log('Shared secret:', sharedSecret_in_little_endian)
-        let hash_in_big_endian = CryptoJS.SHA256(CryptoJS.lib.WordArray.create(sharedSecret_in_little_endian)).toString();
-        console.log('SHA-256:   ', hash_in_big_endian)
-        let sessionKey = Buffer.from(hash_in_big_endian, 'hex').slice(0, 16);
+        let devKeyPub = Buffer.from(_diffieHellmanServerPublicValue, "hex");
+        console.log('Device public value:', _diffieHellmanServerPublicValue)
+        let keyShared = Buffer.from(Curve25519.sharedKey(this.keyring.tunnel.dhSecret.private, devKeyPub));
+        console.log('Shared secret:', keyShared.toString('hex'))
+        let sessionKey = KNXSecure.hash(keyShared).subarray(0, 16);
         console.log('SessionKey:', sessionKey.toString('hex'));
         this.keyring.tunnel.sessionKey = sessionKey;
         this.keyring.tunnel.dhServer = _diffieHellmanServerPublicValue;
