@@ -46,7 +46,7 @@ exports.macCBC = function(key, block0, additional, payload) {
     const tmp2 = cipher.final(); // should return nothing, but it does!??
     // console.log('MAC CBC out:   ', tmp.toString('hex'));
     // console.log('MAC CBC final: ', tmp2.toString('hex'));
-    return tmp.slice(-16);
+    return tmp.subarray(-16);
 };
 
 exports.hash = function (data) {
@@ -68,9 +68,9 @@ exports.encrypt = function (key, ctr, mac, payload) {
 
 exports.decrypt = function(key, ctr, payload) {
     const cipher = crypto.createDecipheriv('aes-128-ctr', key, ctr);
-    const mac = cipher.update(payload.slice(-16));
+    const mac = cipher.update(payload.subarray(-16));
     const data = Buffer.concat([
-        cipher.update(payload.slice(0, -16)),
+        cipher.update(payload.subarray(0, -16)),
         cipher.final()
     ]);
     return { data, mac };

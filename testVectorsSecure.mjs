@@ -58,7 +58,7 @@ console.log('XORed pubkeys', dump(pubXOR));
 const keyShared = Curve25519.sharedKey(myKey.private, devKeyPub);
 console.log('# SessionResponse');
 console.log('ECDH shared  ', dump(keyShared));
-const sessionKey = hash(Buffer.from(keyShared)).slice(0, 16);
+const sessionKey = hash(Buffer.from(keyShared)).subarray(0, 16);
 console.log('Session key  ', dump(sessionKey));
 const myPassword = 'secret';
 const devPassword = 'trustme';
@@ -68,7 +68,7 @@ const data = Buffer.from('0610095200380001b752be246459260f6b0c4801fbd5a67599f83b
 const blockEmpty = Buffer.alloc(0);
 const block0 = Buffer.alloc(16); // zero-filled block for MAC
 const mac = macCBC(devPasswordHash, block0,
-    Buffer.concat([data.slice(0, 8), pubXOR]), blockEmpty);
+    Buffer.concat([data.subarray(0, 8), pubXOR]), blockEmpty);
 console.log('MAC (cleartx)', dump(mac));
 const ctrSessionResponse = Buffer.from('0000000000000000000000000000ff00', 'hex');
 const macEncrypted = encrypt(devPasswordHash, ctrSessionResponse, mac, blockEmpty);
@@ -80,31 +80,31 @@ const authWrap = Buffer.from('06100950003e000100000000000000fa12345678affe7915a4
 const authSess = Buffer.from('06100953001800011f1d59ea9f12a152e5d9727f08462cde', 'hex');
 const authCtrSession = Buffer.from('0000000000000000000000000000ff00', 'hex');
 const authMAC = macCBC(myPasswordHash, block0,
-    Buffer.concat([authSess.slice(0, 8), pubXOR]), blockEmpty);
+    Buffer.concat([authSess.subarray(0, 8), pubXOR]), blockEmpty);
 console.log('MAC (clear)  ', dump(authMAC));
 const authMACEncrypted = encrypt(myPasswordHash, authCtrSession, authMAC, blockEmpty);
 console.log('MAC (encrypt)', dump(authMACEncrypted));
-console.log('MAC (receivd)', dump(authSess.slice(8)));
-if (!authMACEncrypted.equals(authSess.slice(8)))
+console.log('MAC (receivd)', dump(authSess.subarray(8)));
+if (!authMACEncrypted.equals(authSess.subarray(8)))
     throw new Error('Invalid MAC.');
 const encrypted = wrap(sessionKey, authSess,
-    authWrap.slice(6, 8),    // secure session id
-    authWrap.slice(8, 14),   // sequence number
-    authWrap.slice(14, 20),  // serial number
-    authWrap.slice(20, 22)); // message tag
-if (!encrypted.equals(authWrap.slice(22)))
+    authWrap.subarray(6, 8),    // secure session id
+    authWrap.subarray(8, 14),   // sequence number
+    authWrap.subarray(14, 20),  // serial number
+    authWrap.subarray(20, 22)); // message tag
+if (!encrypted.equals(authWrap.subarray(22)))
     throw new Error('Invalid encryption.');
 // verify MAC
-const decrypted = decrypt(myPasswordHash, authCtrSession, authSess.slice(8));
+const decrypted = decrypt(myPasswordHash, authCtrSession, authSess.subarray(8));
 if (!authMAC.equals(decrypted.mac))
     throw new Error("Decrypted MAC error.");
 console.log('# SessionStatus');
 const statusWrap = Buffer.from('06100950002e000100000000000000faaaaaaaaaaffe26156db5c749888fa373c3e0b4bde4497c395e4b1c2f46a1', 'hex');
 const statusSess = Buffer.from('0610095400080000', 'hex');
 const statusEncr = wrap(sessionKey, statusSess,
-    statusWrap.slice(6, 8),    // secure session id
-    statusWrap.slice(8, 14),   // sequence number
-    statusWrap.slice(14, 20),  // serial number
-    statusWrap.slice(20, 22)); // message tag
-if (!statusEncr.equals(statusWrap.slice(22)))
+    statusWrap.subarray(6, 8),    // secure session id
+    statusWrap.subarray(8, 14),   // sequence number
+    statusWrap.subarray(14, 20),  // serial number
+    statusWrap.subarray(20, 22)); // message tag
+if (!statusEncr.equals(statusWrap.subarray(22)))
     throw new Error('Invalid encryption.');
