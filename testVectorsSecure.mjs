@@ -1,5 +1,6 @@
 import KNXSecure from './src/protocol/KNXSecure.js';
 import Curve25519 from './src/Curve25519.js';
+import { pbkdf2Sync } from 'node:crypto';
 
 const { pbkdf2, xor, len2byte, macCBC, hash, encrypt, decrypt } = KNXSecure;
 
@@ -47,23 +48,27 @@ function wrap(sessionKey, payload, sessionId, sequence, serial, tag) {
 
 // replicate test vectors from
 // https://github.com/XKNX/xknx/blob/5f8b96871ee90f81ebdb447e0f22629c47063b75/examples/ip_secure_calculations.py#L159
+// origin: AN159_v06_KNXnet-IP_Secure_AS.pdf
 
-console.log('# SessionRequest');
+console.log('# A.1 SessionRequest (page 63)');
 const myKey = Curve25519.generateKeyPair(Buffer.from('b8fabd62665d8b9e8a9d8b1f4bca42c8c2789a6110f50e9dd785b3ede883f378','hex'));
+//let myPub = Buffer.from('68c1744813f4e65cf10cca671caa1336a796b4ac40cc5cf2655674225c1e5264', 'hex');
 console.log('My public    ', dump(myKey.public));
+console.log('# A.2 SessionResponse');
+//let devKeyPrv = Buffer.from('68c1744813f4e65cf10cca671caa1336a796b4ac40cc5cf2655674225c1e5264', 'hex');
 const devKeyPub = Buffer.from('bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824', 'hex');
 console.log('Device public', dump(devKeyPub));
 const pubXOR = xor(Buffer.from(myKey.public), devKeyPub);
 console.log('XORed pubkeys', dump(pubXOR));
 const keyShared = Curve25519.sharedKey(myKey.private, devKeyPub);
-console.log('# SessionResponse');
-console.log('ECDH shared  ', dump(keyShared));
 const sessionKey = hash(Buffer.from(keyShared)).subarray(0, 16);
 console.log('Session key  ', dump(sessionKey));
 const myPassword = 'secret';
 const devPassword = 'trustme';
 const devPasswordHash = await pbkdf2(devPassword, 'device-authentication-code.1.secure.ip.knx.org', 65536, 16, 'sha256');
 console.log('Device passwd', dump(devPasswordHash));
+const devPasswordHash2 = pbkdf2Sync(devPassword, 'device-authentication-code.1.secure.ip.knx.org', 65536, 16, 'sha256');
+console.log('Device passw2', dump(devPasswordHash2));
 const data = Buffer.from('0610095200380001b752be246459260f6b0c4801fbd5a67599f83b4057b3ef1e79e469ac17234e15', 'hex');
 const blockEmpty = Buffer.alloc(0);
 const block0 = Buffer.alloc(16); // zero-filled block for MAC
