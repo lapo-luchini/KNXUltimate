@@ -6,6 +6,14 @@
 
 # CHANGELOG
 
+p>
+<b>Version 1.0.34</b> - March 2023<br/>
+- NEW: Added Datapoint 235.001 Tariff.<br/>
+</p>
+<p>
+<b>Version 1.0.33</b> - March 2023<br/>
+- NEW: Added Datapoint 29.xxx.<br/>
+</p>
 <p>
 <b>Version 1.0.32</b> - January 2023<br/>
 - FIX: Fixed Datapoint 9. There was too many decimals.<br/>
