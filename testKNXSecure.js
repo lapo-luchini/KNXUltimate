@@ -44,19 +44,20 @@ let knxUltimateClientProperties = {
 };
 
 async function go() {
-    knxUltimateClientProperties.jKNXSecureKeyring = await KNXsecureKeyring.keyring.load(rawjKNXSecureKeyring, "banana");
+    const keyring = await KNXsecureKeyring.keyring.load(rawjKNXSecureKeyring, "banana");
+    knxUltimateClientProperties.jKNXSecureKeyring = keyring;
     let knxUltimateClient = new knx.KNXClient(knxUltimateClientProperties);
 
     const priv = Buffer.from('b8fabd62665d8b9e8a9d8b1f4bca42c8c2789a6110f50e9dd785b3ede883f378','hex');
     const myKey = Curve25519.generateKeyPair(priv);
+    //                        0610095200380001b752be246459260f6b0c4801fbd5a67599f83b4057b3ef1e79e469ac17234e15
     const data = Buffer.from('0610095200380001bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824a922505aaa436163570bd5494c2df2a3', 'hex');
     
-    knxUltimateClientProperties.jKNXSecureKeyring.tunnel = {
-        dhSecret: myKey
-    };
+    keyring.tunnel = { dhSecret: myKey };
+    keyring.Devices[0].authenticationPassword = 'trustme';
 
     console.log('My public    ', Buffer.from(myKey.public).toString('hex'));
-    console.log('Device public bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824 (expected)');
+    console.log('Expect.public value: bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824');
 
     // KNXSecureSessionResponse.createFromBuffer(data);
     KNXProtocol.parseMessage(data);

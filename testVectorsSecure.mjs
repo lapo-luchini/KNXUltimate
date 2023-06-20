@@ -72,6 +72,7 @@ console.log('Device passw2', dump(devPasswordHash2));
 const data = Buffer.from('0610095200380001b752be246459260f6b0c4801fbd5a67599f83b4057b3ef1e79e469ac17234e15', 'hex');
 const blockEmpty = Buffer.alloc(0);
 const block0 = Buffer.alloc(16); // zero-filled block for MAC
+console.log('MAC (data)   ', Buffer.concat([data.subarray(0, 8), pubXOR]).toString('hex'));
 const mac = macCBC(devPasswordHash, block0,
     Buffer.concat([data.subarray(0, 8), pubXOR]), blockEmpty);
 console.log('MAC (cleartx)', dump(mac));

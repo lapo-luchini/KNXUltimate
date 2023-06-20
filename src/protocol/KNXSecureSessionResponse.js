@@ -15,7 +15,7 @@ const mac = require('aes-cbc-mac');
 const crypto = require('crypto');
 
 class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
-    constructor(_secureSessionID, _diffieHellmanServerPublicValue, _messageAuthenticationCode) {
+    constructor(_secureSessionID, _diffieHellmanServerPublicValue, _messageAuthenticationCode, _head) {
 
 
         // For KNX IP Secure, a secure connection (Tunnelling or Device Management) is established in the following way:
@@ -59,28 +59,48 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         // 1) sharedSecret_in_little_endian = Curve25519(myPrivateKey, peersPublicKey)
         // 2) hash_in_big_endian = SHA256(sharedSecret_in_little_endian)
         // 3) sessionKey = get_first_16_bytes(hash_in_big_endian)
-        let devKeyPub = Buffer.from(_diffieHellmanServerPublicValue, "hex");
+        const devKeyPub = Buffer.from(_diffieHellmanServerPublicValue, "hex");
         console.log('Device public value:', _diffieHellmanServerPublicValue)
-        let keyShared = Buffer.from(Curve25519.sharedKey(this.keyring.tunnel.dhSecret.private, devKeyPub));
+        const keyShared = Buffer.from(Curve25519.sharedKey(this.keyring.tunnel.dhSecret.private, devKeyPub));
         console.log('Shared secret:', keyShared.toString('hex'))
-        let sessionKey = KNXSecure.hash(keyShared).subarray(0, 16);
+        const sessionKey = KNXSecure.hash(keyShared).subarray(0, 16);
         console.log('SessionKey:', sessionKey.toString('hex'));
         this.keyring.tunnel.sessionKey = sessionKey;
         this.keyring.tunnel.dhServer = _diffieHellmanServerPublicValue;
-        let auth = this.keyring.Devices[0].authenticationPassword
-        auth = auth + new Array((32 + 1) - auth.length).join('\0')
-        auth = Buffer.from(auth)
-        console.log('Auth', auth.toString('hex'));
-        const myMAC = mac.create(auth, sessionKey, 16);
-        console.log('MAC', _messageAuthenticationCode);
-        console.log('my1', myMAC.toString('hex'));
-        const ccm = crypto.createCipheriv('aes-128-ccm', auth, sessionKey, { authTagLength: 16 });
-        const aad = Buffer.alloc(40); // KNXnet/IP Secure Header | Secure Session Identifier | (Diffie-Hellman Client Public Value X ^ Diffie-Hellman Server Public Value Y)
-        ccm.setAAD(aad, { plaintextLength: 0 });
-        ccm.final();
-        console.log('my2', ccm.getAuthTag().toString('hex'));
-
-
+        console.log('MACo', _messageAuthenticationCode);
+        /*{
+            let auth = this.keyring.Devices[0].authenticationPassword;
+            console.log('Auth', auth);
+            auth = auth + new Array((32 + 1) - auth.length).join('\0')
+            auth = Buffer.from(auth)
+            console.log('Auth', auth.toString('hex'));
+            const myMAC = mac.create(auth, sessionKey, 16);
+            console.log('MAC1', myMAC.toString('hex'));
+            const ccm = crypto.createCipheriv('aes-128-ccm', auth, sessionKey, { authTagLength: 16 });
+            const aad = Buffer.alloc(40); // KNXnet/IP Secure Header | Secure Session Identifier | (Diffie-Hellman Client Public Value X ^ Diffie-Hellman Server Public Value Y)
+            ccm.setAAD(aad, { plaintextLength: 0 });
+            ccm.final();
+            console.log('my2', ccm.getAuthTag().toString('hex'));
+        }*/
+        {
+            const devPassword = this.keyring.Devices[0].authenticationPassword;
+            const devPasswordHash = crypto.pbkdf2Sync(devPassword, 'device-authentication-code.1.secure.ip.knx.org', 65536, 16, 'sha256');
+            console.log('Device password ', devPasswordHash.toString('hex'));
+            const pubXOR = KNXSecure.xor(Buffer.from(this.keyring.tunnel.dhSecret.public), devKeyPub);
+            console.log('XOR ', pubXOR.toString('hex'));
+            console.log('Head ', _head.toString('hex'));
+            const bufSSID = Buffer.alloc(2);
+            bufSSID.writeUInt16BE(_secureSessionID);
+            const data = Buffer.concat([_head, bufSSID, pubXOR]);
+            console.log('Data ', data.toString('hex'));
+            const blockEmpty = Buffer.alloc(0);
+            const myMAC = KNXSecure.macCBC(devPasswordHash, Buffer.alloc(16), data, blockEmpty);
+            console.log('MAC2', myMAC.toString('hex'));
+            const ctrSessionResponse = Buffer.from('0000000000000000000000000000ff00', 'hex');
+            const macEncrypted = KNXSecure.encrypt(devPasswordHash, ctrSessionResponse, myMAC, blockEmpty);
+            console.log('MAC (encrypt)', macEncrypted.toString('hex'));
+            console.log(Buffer.compare(Buffer.from(_messageAuthenticationCode, 'hex'), macEncrypted) == 0 ? 'MAC correct!' : 'MAC wrong.');
+        }
 
         console.log("Tunnel parameters", this.keyring.tunnel)
         // KEYRING:
@@ -217,7 +237,7 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         // |             Diffie-Hellman Server Public Value Y              |                     |
         // |             (32 Octet)                                        |                     |
         // +-7-+-6-+-5-+-4-+-3-+-2-+-1-+-0-+-7-+-6-+-5-+-4-+-3-+-2-+-1-+-0-+---------------------+
-        // |                   Message Authentication Code                  |  Encrypted Data     |
+        // |                   Message Authentication Code                 |  Encrypted Data     |
         // |                   (16 Octet)                                  |  (AES128 CCM)       |
         // +-7-+-6-+-5-+-4-+-3-+-2-+-1-+-0-+-7-+-6-+-5-+-4-+-3-+-2-+-1-+-0-+---------------------+
 
@@ -241,7 +261,19 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         const diffieHellmanServerPublicValue = Buffer.from(buffer.slice(2, 34)).toString("hex");
         // Message Authentication Code
         const messageAuthenticationCode = Buffer.from(buffer.slice(34, 50)).toString("hex");
-        return new KNXSecureSessionResponse(secureSessionID, diffieHellmanServerPublicValue, messageAuthenticationCode);
+        return new KNXSecureSessionResponse(secureSessionID, diffieHellmanServerPublicValue, messageAuthenticationCode, buffer.slice(0, 8));
+    }
+    static createFromBufferH(head, buffer, offset = 0) {
+        if (offset >= buffer.length) {
+            throw new Error('Buffer too short');
+        }
+        // Secure Session Identifier  
+        const secureSessionID = Buffer.from(buffer.slice(0, 2)).readUInt16BE(); // It's in big endian
+        // Diffie-Hellman Server Public Value Y    
+        const diffieHellmanServerPublicValue = Buffer.from(buffer.slice(2, 34)).toString("hex");
+        // Message Authentication Code
+        const messageAuthenticationCode = Buffer.from(buffer.slice(34, 50)).toString("hex");
+        return new KNXSecureSessionResponse(secureSessionID, diffieHellmanServerPublicValue, messageAuthenticationCode, head.toBuffer());
     }
 
 }

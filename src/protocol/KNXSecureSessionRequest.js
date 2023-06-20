@@ -7,6 +7,7 @@ exports.KNXSecureSessionRequest = void 0
 const crypto = require('crypto')
 const KNXConstants = require('./KNXConstants')
 const KNXPacket = require('./KNXPacket')
+const KNXSecure = require('./KNXSecure')
 const HPAI = require('./HPAI')
 const CRIFactory = __importDefault(require('./CRIFactory'))
 
@@ -16,7 +17,7 @@ class KNXSecureSessionRequest extends KNXPacket.KNXPacket {
     super(KNXConstants.KNX_CONSTANTS.SECURE_SESSION_REQUEST, hpaiData.length + 32)
     this.cri = cri
     this.hpaiData = hpaiData
-    this.diffieHellmanClientPublicValue = Buffer.alloc(32)
+    //this.diffieHellmanClientPublicValue = Buffer.alloc(32)
 
     // Send the DH curve as well
     // 02/01/2022 SONO ARRIVATO QUI get the authentication password from the first tunnel of the interface

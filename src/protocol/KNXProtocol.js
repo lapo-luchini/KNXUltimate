@@ -71,7 +71,8 @@ class KNXProtocol {
         break
       case KNXConstants.KNX_CONSTANTS.SECURE_SESSION_RESPONSE:
         // 23/06/2022 Secure Response
-        knxMessage = KNXSecureSessionResponse.KNXSecureSessionResponse.createFromBuffer(knxData)
+        //knxMessage = KNXSecureSessionResponse.KNXSecureSessionResponse.createFromBuffer(knxData, knxHeader)
+        knxMessage = KNXSecureSessionResponse.KNXSecureSessionResponse.createFromBufferH(knxHeader, knxData)
         break
     }
     return { knxHeader, knxMessage, knxData }
