@@ -35,7 +35,7 @@ function wrap(sessionKey, payload, sessionId, sequence, serial, tag) {
     const mac = macCBC(sessionKey, block0, additional, payload);
     console.log('MAC (clear)  ', mac.toString('hex'));
     const encrypted = encrypt(sessionKey, ctr0, mac, payload);
-    console.log('MAC (encrypt)', encrypted.toString('hex'));
+    console.log('Wrapped      ', encrypted.toString('hex'));
     // 7915a4f36e6e4208d28b4a207d8f35c0d138c26a7b5e716952dba8e7e4bd80bd7d868a3ae78749de
     // d138c26a7b5e716952dba8e7e4bd80bd7d868a3ae78749de
     const decrypted = decrypt(sessionKey, ctr0, encrypted);
@@ -63,7 +63,6 @@ console.log('XORed pubkeys', dump(pubXOR));
 const keyShared = Curve25519.sharedKey(myKey.private, devKeyPub);
 const sessionKey = hash(Buffer.from(keyShared)).subarray(0, 16);
 console.log('Session key  ', dump(sessionKey));
-const myPassword = 'secret';
 const devPassword = 'trustme';
 const devPasswordHash = await pbkdf2(devPassword, 'device-authentication-code.1.secure.ip.knx.org', 65536, 16, 'sha256');
 console.log('Device passwd', dump(devPasswordHash));
@@ -79,7 +78,8 @@ console.log('MAC (cleartx)', dump(mac));
 const ctrSessionResponse = Buffer.from('0000000000000000000000000000ff00', 'hex');
 const macEncrypted = encrypt(devPasswordHash, ctrSessionResponse, mac, blockEmpty);
 console.log('MAC (encrypt)', dump(macEncrypted));
-console.log('# SessionAuthenticate');
+console.log('# A.3 SessionAuthenticate');
+const myPassword = 'secret';
 const myPasswordHash = await pbkdf2(myPassword, 'user-password.1.secure.ip.knx.org', 65536, 16, 'sha256');
 console.log('My password  ', dump(myPasswordHash));
 const authWrap = Buffer.from('06100950003e000100000000000000fa12345678affe7915a4f36e6e4208d28b4a207d8f35c0d138c26a7b5e716952dba8e7e4bd80bd7d868a3ae78749de', 'hex');
@@ -114,3 +114,29 @@ const statusEncr = wrap(sessionKey, statusSess,
     statusWrap.subarray(20, 22)); // message tag
 if (!statusEncr.equals(statusWrap.subarray(22)))
     throw new Error('Invalid encryption.');
+
+/*
+# A.1 SessionRequest (page 63)
+My public     0aa227b4fd7a32319ba9960ac036ce0e5c4507b5ae55161f1078b1dcfb3cb631
+# A.2 SessionResponse
+Device public bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824
+XORed pubkeys b752be246459260f6b0c4801fbd5a67599f83b4057b3ef1e79e469ac17234e15
+Session key   289426c2912535ba98279a4d1843c487
+Device passwd e158e4012047bd6cc41aafbc5c04c1fc
+Device passw2 e158e4012047bd6cc41aafbc5c04c1fc
+MAC (data)    0610095200380001b752be246459260f6b0c4801fbd5a67599f83b4057b3ef1e79e469ac17234e15
+MAC (cleartx) da3dc6af79896aa6ee7573d69950c283
+MAC (encrypt) a922505aaa436163570bd5494c2df2a3
+# A.3 SessionAuthenticate
+My password   03fcedb66660251ec81a1a716901696a
+MAC (clear)   741669f5e32bff6fa2edf51c52d4bd8f
+MAC (encrypt) 1f1d59ea9f12a152e5d9727f08462cde
+MAC (receivd) 1f1d59ea9f12a152e5d9727f08462cde
+# SecureWrapper
+MAC (clear)   602280d0896beaa7106e7248f67f2eef
+Wrapped       7915a4f36e6e4208d28b4a207d8f35c0d138c26a7b5e716952dba8e7e4bd80bd7d868a3ae78749de
+# SessionStatus
+# SecureWrapper
+MAC (clear)   a8ed2796a566cd60b91a4de5c1144cbc
+Wrapped       26156db5c749888fa373c3e0b4bde4497c395e4b1c2f46a1
+*/

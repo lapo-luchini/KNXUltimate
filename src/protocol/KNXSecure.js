@@ -5,10 +5,11 @@ const __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, '__esModule', { value: true })
 exports.KNXSecureSessionRequest = void 0
 
-const util = require('util')
 const crypto = require('crypto')
 
-exports.pbkdf2 = util.promisify(crypto.pbkdf2);
+//TODO: use async?
+// exports.pbkdf2 = require('util').promisify(crypto.pbkdf2);
+exports.pbkdf2 = crypto.pbkdf2Sync;
 
 exports.xor = function (buf1, buf2) {
     if (buf1.length != buf2.length)
@@ -75,5 +76,31 @@ exports.decrypt = function(key, ctr, payload) {
     ]);
     return { data, mac };
 };
+
+exports.wrap = function(sessionKey, payload, sessionId, sequence, serial, tag) {
+    const lenTotal = payload.length + sessionId.length + sequence.length + serial.length + tag.length +
+        6 + // KNX/IP header
+        16; // MAC
+    const header = Buffer.from('06100950', 'hex');
+    const additional = Buffer.concat([
+        header,
+        len2byte(lenTotal),
+        sessionId
+    ]);
+    const block0 = Buffer.concat([
+        sequence,
+        serial,
+        tag,
+        len2byte(payload.length)
+    ]);
+    const ctr0 = Buffer.concat([
+        sequence,
+        serial,
+        tag,
+        Buffer.from('ff00', 'hex')
+    ]);
+    const mac = exports.macCBC(sessionKey, block0, additional, payload);
+    return exports.encrypt(sessionKey, ctr0, mac, payload);
+}
 
 // # sourceMappingURL=KNXSecure.js.map

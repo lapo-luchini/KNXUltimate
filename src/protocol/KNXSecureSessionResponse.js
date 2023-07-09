@@ -6,13 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.KNXSecureSessionResponse = void 0;
 const KNXConstants = require("./KNXConstants");
 const KNXPacket = require("./KNXPacket");
-const HPAI = require("./HPAI");
-const CRIFactory = __importDefault(require("./CRIFactory"));
+// const HPAI = require("./HPAI");
+// const CRIFactory = __importDefault(require("./CRIFactory"));
 const knx = require("../../index.js");
 const KNXSecure = require('./KNXSecure.js');
 const Curve25519 = require('./../Curve25519');
-const mac = require('aes-cbc-mac');
-const crypto = require('crypto');
 
 class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
     constructor(_secureSessionID, _diffieHellmanServerPublicValue, _messageAuthenticationCode, _head) {
@@ -26,17 +24,17 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         // • The server responds with its public key in plain text, append-
         // ed with the result of the following calculation: it calculates the XOR value of its server public key with the client’s public key, encrypts this with the device code to authentify itself to the client and encrypts this a second time with the calculated session key.
         // The device authentication code is either assigned by the
-        // ETS during configuration or the tool key. This device authen- tication code needs to be provided to the operator of the visualisation wishing to establish a secure connection with the
+        // ETS during configuration or the tool key. This device authentication code needs to be provided to the operator of the visualisation wishing to establish a secure connection with the
         // relevant server.
         // • The client performs the same XOR operation, but authorises
         // itself by encrypting this firstly with one of the passwords of the server and again a second time with the session key.
-        // It shall be noted that the encryption algorithm used (Diffie Hellmann) ensures that the session key of the client and the server are identical. The passwords of the server need to be provided to the operator of the visualisation wishing to estab- lish a secure connection with the relevant server.
+        // It shall be noted that the encryption algorithm used (Diffie Hellmann) ensures that the session key of the client and the server are identical. The passwords of the server need to be provided to the operator of the visualisation wishing to establish a secure connection with the relevant server.
         // As regards the above described measures to protect runtime communication, it shall be noted that:
         // • KNX Data Secure devices can be used without any problem
         // next to “classic” KNX devices. This implies that KNX data and IP Secure can be implemented as additional security measure.
-        // • If an installer chooses to use a KNX IP Secure device in an IP backbone, all IP couplers and any KNX IP devices in this back- bone need to be of the type KNX IP Secure.
-        // • If an installer has – at the wish of a customer - used for a function a KNX secure device to secure the runtime com- munication, each communication partner of this device needs to also support KNX Secure for the linked function. In other words, a communication object of a KNX Secure Device can- not be linked once to a secured group address and once to a plain group address.
-        // Devices, which support KNX Data and IP secure, can be distin- guished from “classic” KNX devices, as on the product label a “X” sign is shown.
+        // • If an installer chooses to use a KNX IP Secure device in an IP backbone, all IP couplers and any KNX IP devices in this backbone need to be of the type KNX IP Secure.
+        // • If an installer has – at the wish of a customer - used for a function a KNX secure device to secure the runtime communication, each communication partner of this device needs to also support KNX Secure for the linked function. In other words, a communication object of a KNX Secure Device can- not be linked once to a secured group address and once to a plain group address.
+        // Devices, which support KNX Data and IP secure, can be distinguished from “classic” KNX devices, as on the product label a “X” sign is shown.
         // KNX IP Secure and KNX Data Secure are supported from ETS 5.5 onwards. The ETS allows to configure new KNX Secure de- vices and also allows to replace defective KNX Secure devices.
 
         //super(KNXConstants.KNX_CONSTANTS.SECURE_SESSION_REQUEST, hpaiControl.length + hpaiData.length + cri.length + 32);
@@ -66,8 +64,7 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         const sessionKey = KNXSecure.hash(keyShared).subarray(0, 16);
         console.log('SessionKey:', sessionKey.toString('hex'));
         this.keyring.tunnel.sessionKey = sessionKey;
-        this.keyring.tunnel.dhServer = _diffieHellmanServerPublicValue;
-        console.log('MACo', _messageAuthenticationCode);
+        this.keyring.tunnel.dhServer = devKeyPub;
         /*{
             let auth = this.keyring.Devices[0].authenticationPassword;
             console.log('Auth', auth);
@@ -84,9 +81,10 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
         }*/
         {
             const devPassword = this.keyring.Devices[0].authenticationPassword;
-            const devPasswordHash = crypto.pbkdf2Sync(devPassword, 'device-authentication-code.1.secure.ip.knx.org', 65536, 16, 'sha256');
+            const devPasswordHash = KNXSecure.pbkdf2(devPassword, 'device-authentication-code.1.secure.ip.knx.org', 65536, 16, 'sha256');
             console.log('Device password ', devPasswordHash.toString('hex'));
             const pubXOR = KNXSecure.xor(Buffer.from(this.keyring.tunnel.dhSecret.public), devKeyPub);
+            // this.keyring.tunnel.pubXOR = pubXOR;
             console.log('XOR ', pubXOR.toString('hex'));
             console.log('Head ', _head.toString('hex'));
             const bufSSID = Buffer.alloc(2);
@@ -96,9 +94,10 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
             const blockEmpty = Buffer.alloc(0);
             const myMAC = KNXSecure.macCBC(devPasswordHash, Buffer.alloc(16), data, blockEmpty);
             console.log('MAC2', myMAC.toString('hex'));
-            const ctrSessionResponse = Buffer.from('0000000000000000000000000000ff00', 'hex');
+            const ctrSessionResponse = Buffer.from('0000000000000000000000000000ff00', 'hex'); // 2.2.3.7.4 fig 17
             const macEncrypted = KNXSecure.encrypt(devPasswordHash, ctrSessionResponse, myMAC, blockEmpty);
             console.log('MAC (encrypt)', macEncrypted.toString('hex'));
+            console.log('MACo', _messageAuthenticationCode);
             console.log(Buffer.compare(Buffer.from(_messageAuthenticationCode, 'hex'), macEncrypted) == 0 ? 'MAC correct!' : 'MAC wrong.');
         }
 

@@ -11,27 +11,26 @@ const KNXSecure = require('./KNXSecure')
 const HPAI = require('./HPAI')
 const CRIFactory = __importDefault(require('./CRIFactory'))
 
-class KNXSecureSessionRequest extends KNXPacket.KNXPacket {
-  constructor (cri, hpaiData = HPAI.HPAI.NULLHPAI, _jKNXSecureKeyring = {}, useTestKey = null) {
+class KNXSecureSessionAuthenticate extends KNXPacket.KNXPacket {
+  constructor (cri, hpaiData = HPAI.HPAI.NULLHPAI, _jKNXSecureKeyring = {}) {
     // super(KNXConstants.KNX_CONSTANTS.SECURE_SESSION_REQUEST, hpaiControl.length + hpaiData.length + cri.length + 32);
-    super(KNXConstants.KNX_CONSTANTS.SECURE_SESSION_REQUEST, hpaiData.length + 32)
-    this.cri = cri
-    this.hpaiData = hpaiData
+    super(KNXConstants.KNX_CONSTANTS.SECURE_SESSION_AUTH, hpaiData.length + 32)
+    this.cri = cri;
+    this.hpaiData = hpaiData;
+    const keyring = _jKNXSecureKeyring;
+    const tunnel = keyring.tunnel;
 
-    const Curve25519 = require('./../Curve25519')
-    try {
-      if (useTestKey)
-        console.log('Warning INSECURE test key in use:', useTestKey);
-      const secret = Curve25519.generateKeyPair(useTestKey || crypto.randomBytes(32))
-      // let hexString = "f0c143e363147dc64913d736978042ef748ba448aa6ce2a1dab5ddecca919455";
-      // secret.public = Uint8Array.from(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-      this.diffieHellmanClientPublicValue = Buffer.from(secret.public).toString('hex')
-      // this.diffieHellmanClientPublicValue = Buffer.from(authenticationPasswordUint8Array).toString('hex')
-      _jKNXSecureKeyring.tunnel = {};
-      _jKNXSecureKeyring.tunnel.dhSecret = secret
-    } catch (error) {
-      throw (error)
-    }
+    const myPassword = keyring.Devices[0].managementPassword;
+    const myPasswordHash = KNXSecure.pbkdf2(myPassword, 'user-password.1.secure.ip.knx.org', 65536, 16, 'sha256');
+    console.log('My password', myPasswordHash.toString('hex'));
+    const pubXOR = KNXSecure.xor(Buffer.from(tunnel.dhSecret.public), tunnel.dhServer);
+    console.log('XOR        ', pubXOR.toString('hex'));
+    const authSess = Buffer.from('06100953001800011f1d59ea9f12a152e5d9727f08462cde', 'hex');
+    const sessionId = Buffer.from('0001', 'hex');
+    const sequence = Buffer.from('000000000000', 'hex');
+    const serial = Buffer.from('00fa12345678', 'hex');
+    const tag = Buffer.from('affe', 'hex');
+    this.wrap = KNXSecure.wrap(tunnel.sessionKey, authSess, sessionId, sequence, serial, tag);
   }
 
   static createFromBuffer (buffer, offset = 0) {
@@ -54,5 +53,5 @@ class KNXSecureSessionRequest extends KNXPacket.KNXPacket {
     ])
   }
 }
-exports.KNXSecureSessionRequest = KNXSecureSessionRequest
+exports.KNXSecureSessionAuthenticate = KNXSecureSessionAuthenticate
 // # sourceMappingURL=KNXSecureSessionRequest.js.map
