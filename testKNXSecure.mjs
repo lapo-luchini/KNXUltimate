@@ -1,14 +1,12 @@
-const knx = require("./index.js");
-const KNXsecureKeyring = require("./src/KNXsecureKeyring.js");
-const KNXConstants = require('./src/protocol/KNXConstants');
-const HPAI = require('./src/protocol/HPAI')
-const KNXProtocol = require('./src/protocol/KNXProtocol').KNXProtocol;
-const KNXSecureSessionRequest = require('./src/protocol/KNXSecureSessionRequest').KNXSecureSessionRequest;
-// const KNXSecureSessionResponse = require("./src/protocol/KNXSecureSessionResponse").KNXSecureSessionResponse;
-const KNXSecureSessionAuthenticate = require('./src/protocol/KNXSecureSessionAuthenticate').KNXSecureSessionAuthenticate;
-const TunnelCRI = require('./src/protocol/TunnelCRI').TunnelCRI;
-const Curve25519 = require('./src/Curve25519');
-
+import * as knx from './index.js';
+import * as KNXsecureKeyring from './src/KNXsecureKeyring.js';
+import * as KNXConstants from './src/protocol/KNXConstants.js';
+import * as HPAI from './src/protocol/HPAI.js';
+import {KNXProtocol} from './src/protocol/KNXProtocol.js';
+import {KNXSecureSessionRequest} from './src/protocol/KNXSecureSessionRequest.js';
+// import {KNXSecureSessionResponse} from './src/protocol/KNXSecureSessionResponse.js';
+import {KNXSecureSessionAuthenticate} from './src/protocol/KNXSecureSessionAuthenticate.js';
+import {TunnelCRI} from './src/protocol/TunnelCRI.js';
 
 let rawjKNXSecureKeyring = `<?xml version="1.0" encoding="utf-8"?>
 <Keyring Project="KNX Secure" CreatedBy="6.0.5" Created="2022-09-11T09:01:28" Signature="eQl8q8x2W+k00K9t6+RhIw==" xmlns="http://knx.org/xml/keyring/1">
@@ -47,31 +45,27 @@ let knxUltimateClientProperties = {
     jKNXSecureKeyring: "", // This is the unencrypted Keyring file content (see below)
 };
 
-async function go() {
-    const keyring = await KNXsecureKeyring.keyring.load(rawjKNXSecureKeyring, "banana");
-    knxUltimateClientProperties.jKNXSecureKeyring = keyring;
-    let knxUltimateClient = new knx.KNXClient(knxUltimateClientProperties);
+const keyring = await KNXsecureKeyring.keyring.load(rawjKNXSecureKeyring, "banana");
+knxUltimateClientProperties.jKNXSecureKeyring = keyring;
+let knxUltimateClient = new knx.KNXClient(knxUltimateClientProperties);
 
-    keyring.Devices[0].authenticationPassword = 'trustme';
-    keyring.Devices[0].managementPassword = 'secret';
+keyring.Devices[0].authenticationPassword = 'trustme';
+keyring.Devices[0].managementPassword = 'secret';
 
-    const cri = null; //TunnelCRI.createFromBuffer();
-    const oHPAI = new HPAI.HPAI('0.0.0.0', 0, KNXConstants.KNX_CONSTANTS.IPV4_TCP);
-    const priv = Buffer.from('b8fabd62665d8b9e8a9d8b1f4bca42c8c2789a6110f50e9dd785b3ede883f378','hex');
-    // KNXProtocol.newKNXSecureSessionRequestTest(cri, oHPAI, keyring, priv);
-    new KNXSecureSessionRequest(cri, oHPAI, keyring, priv);
+const cri = null; //TunnelCRI.createFromBuffer();
+const oHPAI = new HPAI.HPAI('0.0.0.0', 0, KNXConstants.KNX_CONSTANTS.IPV4_TCP);
+const priv = Buffer.from('b8fabd62665d8b9e8a9d8b1f4bca42c8c2789a6110f50e9dd785b3ede883f378','hex');
+// KNXProtocol.newKNXSecureSessionRequestTest(cri, oHPAI, keyring, priv);
+new KNXSecureSessionRequest(cri, oHPAI, keyring, priv);
 
-    console.log('My public    ', Buffer.from(keyring.tunnel.dhSecret.public).toString('hex'));
-    console.log('Expect.public value: bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824');
+console.log('My public    ', Buffer.from(keyring.tunnel.dhSecret.public).toString('hex'));
+console.log('Expect.public value: bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824');
 
-    // KNXSecureSessionResponse.createFromBuffer(data);
-    const response = Buffer.from('0610095200380001bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824a922505aaa436163570bd5494c2df2a3', 'hex');
-    KNXProtocol.parseMessage(response);
+// KNXSecureSessionResponse.createFromBuffer(data);
+const response = Buffer.from('0610095200380001bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824a922505aaa436163570bd5494c2df2a3', 'hex');
+KNXProtocol.parseMessage(response);
 
-    const auth = new KNXSecureSessionAuthenticate(cri, oHPAI, keyring);
-    console.log('Wrap       ', auth.wrap.toString('hex'));
-    const expectedWrap = Buffer.from('7915a4f36e6e4208d28b4a207d8f35c0d138c26a7b5e716952dba8e7e4bd80bd7d868a3ae78749de', 'hex');
-    console.log(auth.wrap.equals(expectedWrap) ? 'OK!' : 'Error.');
-}
-
-go();
+const auth = new KNXSecureSessionAuthenticate(cri, oHPAI, keyring);
+console.log('Wrap       ', auth.wrap.toString('hex'));
+const expectedWrap = Buffer.from('7915a4f36e6e4208d28b4a207d8f35c0d138c26a7b5e716952dba8e7e4bd80bd7d868a3ae78749de', 'hex');
+console.log(auth.wrap.equals(expectedWrap) ? 'OK!' : 'Error.');
