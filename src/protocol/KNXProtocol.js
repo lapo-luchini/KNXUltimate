@@ -18,6 +18,7 @@ const KNXTunnelingAck = require('./KNXTunnelingAck')
 const KNXRoutingIndication = require('./KNXRoutingIndication') // 07/12/2021
 const KNXSecureSessionRequest = require('./KNXSecureSessionRequest') // 07/12/2021
 const KNXSecureSessionResponse = require("./KNXSecureSessionResponse"); // 23/06/2022
+const KNXSecureSessionAuthenticate = require("./KNXSecureSessionAuthenticate");
 const sysLogger = require('./../KnxLog.js').get() // 08/04/2021 new logger to adhere to the loglevel selected in the config-window
 
 const HPAI = require('./HPAI')
@@ -116,6 +117,10 @@ class KNXProtocol {
 
   static newKNXSecureSessionRequest (cri, hpaiData = HPAI.HPAI.NULLHPAI, jKNXSecureKeyring) {
     return new KNXSecureSessionRequest.KNXSecureSessionRequest(cri, hpaiData, jKNXSecureKeyring)
+  }
+
+  static newKNXSecureSessionAuthenticate (cri, jKNXSecureKeyring) {
+    return new KNXSecureSessionAuthenticate.KNXSecureSessionAuthenticate(cri, jKNXSecureKeyring)
   }
 }
 exports.KNXProtocol = KNXProtocol

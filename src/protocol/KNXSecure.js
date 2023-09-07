@@ -81,7 +81,11 @@ exports.wrap = function(sessionKey, payload, sessionId, sequence, serial, tag) {
     const lenTotal = payload.length + sessionId.length + sequence.length + serial.length + tag.length +
         6 + // KNX/IP header
         16; // MAC
-    const header = Buffer.from('06100950', 'hex');
+    const header = Buffer.from(
+        '06' +  // header size
+        '10' +  // protocol version
+        '0950', // SECURE_WRAPPER
+        'hex');
     const additional = Buffer.concat([
         header,
         len2byte(lenTotal),

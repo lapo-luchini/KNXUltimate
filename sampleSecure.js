@@ -147,8 +147,11 @@ async function go() {
 
     knxUltimateClient.Connect();
 
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    knxUltimateClient._sendSecureSessionAuthenticateMessage(null /*?*/);
+
     // Wait some seconds, just for fun
-    await new Promise((resolve, reject) => setTimeout(resolve, 10000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
 
     // Disconnects
     if (knxUltimateClient.isConnected()) knxUltimateClient.Disconnect();
