@@ -51,12 +51,12 @@ let knxUltimateClient = new knx.KNXClient(knxUltimateClientProperties);
 
 keyring.Devices[0].authenticationPassword = 'trustme';
 keyring.Devices[0].managementPassword = 'secret';
+// console.log('Keyring devices[0]', keyring.Devices[0]);
 
 const cri = null; //TunnelCRI.createFromBuffer();
 const oHPAI = new HPAI.HPAI('0.0.0.0', 0, KNXConstants.KNX_CONSTANTS.IPV4_TCP);
-const priv = Buffer.from('b8fabd62665d8b9e8a9d8b1f4bca42c8c2789a6110f50e9dd785b3ede883f378','hex');
-// KNXProtocol.newKNXSecureSessionRequestTest(cri, oHPAI, keyring, priv);
-new KNXSecureSessionRequest(cri, oHPAI, keyring, priv);
+keyring.useTestKey = Buffer.from('b8fabd62665d8b9e8a9d8b1f4bca42c8c2789a6110f50e9dd785b3ede883f378','hex');
+new KNXSecureSessionRequest(cri, oHPAI, keyring/*, priv*/);
 
 console.log('My public    ', Buffer.from(keyring.tunnel.dhSecret.public).toString('hex'));
 console.log('Expect.public value: bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824');
@@ -65,7 +65,7 @@ console.log('Expect.public value: bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f9
 const response = Buffer.from('0610095200380001bdf099909923143ef0a5de0b3be3687bc5bd3cf5f9e6f901699cd870ec1ff824a922505aaa436163570bd5494c2df2a3', 'hex');
 KNXProtocol.parseMessage(response);
 
-const auth = new KNXSecureSessionAuthenticate(cri, oHPAI, keyring);
+const auth = new KNXSecureSessionAuthenticate(cri, keyring);
 console.log('Wrap       ', auth.wrap.toString('hex'));
 const expectedWrap = Buffer.from('7915a4f36e6e4208d28b4a207d8f35c0d138c26a7b5e716952dba8e7e4bd80bd7d868a3ae78749de', 'hex');
 console.log(auth.wrap.equals(expectedWrap) ? 'OK!' : 'Error.');

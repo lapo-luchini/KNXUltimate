@@ -20,13 +20,14 @@ class KNXSecureSessionRequest extends KNXPacket.KNXPacket {
 
     const Curve25519 = require('./../Curve25519')
     try {
-      if (useTestKey)
-        console.log('Warning INSECURE test key in use:', useTestKey);
-      const secret = Curve25519.generateKeyPair(useTestKey || crypto.randomBytes(32))
+      if (_jKNXSecureKeyring.useTestKey)
+        console.log('Warning INSECURE test key in use:', _jKNXSecureKeyring.useTestKey);
+      const secret = Curve25519.generateKeyPair(_jKNXSecureKeyring.useTestKey || crypto.randomBytes(32))
       // let hexString = "f0c143e363147dc64913d736978042ef748ba448aa6ce2a1dab5ddecca919455";
       // secret.public = Uint8Array.from(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-      this.diffieHellmanClientPublicValue = Buffer.from(secret.public).toString('hex')
+      this.diffieHellmanClientPublicValue = Buffer.from(secret.public).toString('hex');
       // this.diffieHellmanClientPublicValue = Buffer.from(authenticationPasswordUint8Array).toString('hex')
+      console.log('My public:', this.diffieHellmanClientPublicValue);
       _jKNXSecureKeyring.tunnel = {};
       _jKNXSecureKeyring.tunnel.dhSecret = secret
     } catch (error) {
