@@ -85,7 +85,7 @@ class KNXSecureSessionResponse extends KNXPacket.KNXPacket {
             console.log('Device password ', devPasswordHash.toString('hex'));
             const pubXOR = KNXSecure.xor(Buffer.from(this.keyring.tunnel.dhSecret.public), devKeyPub);
             // this.keyring.tunnel.pubXOR = pubXOR;
-            console.log('XOR ', pubXOR.toString('hex'));
+            console.log('Pub XOR:', pubXOR.toString('hex'));
             console.log('Head ', _head.toString('hex'));
             const bufSSID = Buffer.alloc(2);
             bufSSID.writeUInt16BE(_secureSessionID);

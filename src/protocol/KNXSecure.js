@@ -28,24 +28,29 @@ function len2byte(len) {
 exports.len2byte = len2byte;
 
 exports.macCBC = function(key, block0, additional, payload) {
+    console.log(new Error().stack);
+    console.log('MAC key:   ', key.toString('hex'));
     const lenAddit = additional.length;
     if ((lenAddit >>> 16) > 0)
         throw new Error('Additional data is too long.');
     const lenTotal = block0.length + 2 + lenAddit + payload.length;
     const lenPadded = ((lenTotal-1)|0xF)+1; // pad to next 16 bytes block
-    const blocks = Buffer.concat([
+    console.log('Length and padding:', lenTotal, lenPadded);
+    const blocks = [
         block0,
         len2byte(lenAddit),
         additional,
         payload,
         Buffer.alloc(lenPadded - lenTotal)
-    ]);
-    // console.log('MAC CBC key:   ', key.toString('hex'));
-    // console.log('MAC CBC blocks:', blocks.toString('hex'));
+    ];
+    const input = Buffer.concat(blocks);
+    console.log('MAC input: ', input.toString('hex'));
+    console.log('MAC blocks:', blocks.map(x => x.toString('hex')));
     const cipher = crypto.createCipheriv('aes-128-cbc', key, Buffer.alloc(16));
-    const tmp = cipher.update(blocks);
-    const tmp2 = cipher.final(); // should return nothing, but it does!??
-    // console.log('MAC CBC out:   ', tmp.toString('hex'));
+    const tmp = cipher.update(input);
+    // console.log('MAC CBC out:', tmp.toString('hex'));
+    console.log('MAC result:', tmp.subarray(-16).toString('hex'));
+    // const tmp2 = cipher.final(); // should return nothing, but it does!??
     // console.log('MAC CBC final: ', tmp2.toString('hex'));
     return tmp.subarray(-16);
 };
@@ -60,11 +65,13 @@ exports.hash = function (data) {
 exports.encrypt = function (key, ctr, mac, payload) {
     const cipher = crypto.createCipheriv('aes-128-ctr', key, ctr);
     const macEncrypted = cipher.update(mac);
-    return Buffer.concat([
+    const arr = [
         cipher.update(payload),
         cipher.final(),
         macEncrypted
-    ]);
+    ];
+    console.log('Encrypt:', arr.map(x => x.toString('hex')));
+    return Buffer.concat(arr);
 };
 
 exports.decrypt = function(key, ctr, payload) {

@@ -15,35 +15,39 @@ class KNXSecureSessionAuthenticate extends KNXPacket.KNXPacket {
   constructor (cri,  _jKNXSecureKeyring = {}) {
     // super(KNXConstants.KNX_CONSTANTS.SECURE_SESSION_REQUEST, hpaiControl.length + hpaiData.length + cri.length + 32);
     // super(KNXConstants.KNX_CONSTANTS.SECURE_SESSION_AUTH, 26)
-    super(KNXConstants.KNX_CONSTANTS.SECURE_WRAPPER, 62)
+    super(KNXConstants.KNX_CONSTANTS.SECURE_WRAPPER, 56)
     this.cri = cri;
     const keyring = _jKNXSecureKeyring;
     const tunnel = keyring.tunnel;
 
-    const myPassword = keyring.Devices[0].managementPassword;
+    const myPassword = keyring.interfaces[0].managementPassword;
+    console.log('Password:', myPassword);
     const myPasswordHash = KNXSecure.pbkdf2(myPassword, 'user-password.1.secure.ip.knx.org', 65536, 16, 'sha256');
-    console.log('My password', myPasswordHash.toString('hex'));
+    console.log('Derived: ', myPasswordHash.toString('hex'));
     const pubXOR = KNXSecure.xor(Buffer.from(tunnel.dhSecret.public), tunnel.dhServer);
-    console.log('XOR        ', pubXOR.toString('hex'));
+    console.log('Pub XOR:', pubXOR.toString('hex'));
     const authHead = Buffer.from(
       '06' +   // header size
       '10' +   // protocol version
       '0953' + // SESSION_AUTHENTICATE
       '0018' + // total length (24)
-      '0001', // user id (admin)
+      //'0001', // user id (admin)
+      '0002', // user id (why?)
       'hex');
     const mac = KNXSecure.macCBC(myPasswordHash, Buffer.alloc(16), Buffer.concat([ authHead, pubXOR ]), Buffer.alloc(0));
     const authCtrSession = Buffer.from('0000000000000000000000000000ff00', 'hex');
     const macEncrypted = KNXSecure.encrypt(myPasswordHash, authCtrSession, mac, Buffer.alloc(0));
+    //console.log('MAC encr.  ', macEncrypted.toString('hex'));
     const authSess = Buffer.concat([ authHead, macEncrypted ]);
     // const authSess = pubXOR;
-    const sessionId = Buffer.from('0001', 'hex');
+    // const sessionId = Buffer.from('0001', 'hex');
+    const sessionId = Buffer.from('0008', 'hex'); //TODO
     // const sessionId = Buffer.from('000a', 'hex');
     const sequence = Buffer.from('000000000000', 'hex');
-    const serial = Buffer.from('00fa12345678', 'hex');
-    const tag = Buffer.from('affe', 'hex');
-    // const serial = Buffer.from('0000786b6e78', 'hex');
-    // const tag = Buffer.from('0000', 'hex');
+    // const serial = Buffer.from('00fa12345678', 'hex');
+    // const tag = Buffer.from('affe', 'hex');
+    const serial = Buffer.from('0000786b6e78', 'hex');
+    const tag = Buffer.from('0000', 'hex');
     this.head2 = Buffer.concat([ sessionId, sequence, serial, tag ]);
     this.wrap = KNXSecure.wrap(tunnel.sessionKey, authSess, sessionId, sequence, serial, tag);
   }
